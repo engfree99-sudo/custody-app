@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>دفتر العهدة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --paper:#FAF7F1;
+    --card:#FFFDF9;
+    --ink:#221F1B;
+    --ink-soft:#6B655C;
+    --line:#E4DCCE;
+    --credit:#1F5F4E;
+    --credit-soft:#E4EFEA;
+    --debit:#A8432A;
+    --debit-soft:#F5E7E1;
+    --gold:#B08B3D;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:'Tajawal', sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+    min-height:100vh;
+  }
+  .phone{
+    width:100%;
+    max-width:430px;
+    min-height:100vh;
+    background:var(--paper);
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(176,139,61,0.10) 1px, transparent 0);
+    background-size: 18px 18px;
+  }
+
+  header{
+    padding:22px 20px 10px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  header .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  header .brand .mark{
+    width:34px;height:34px;
+    border-radius:9px;
+    background:var(--credit);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff; font-weight:900; font-size:16px;
+    box-shadow: 0 3px 0 #163f34;
+  }
+  header h1{ font-size:18px; font-weight:900; letter-spacing:.2px;}
+  header .sub{ font-size:11px; color:var(--ink-soft); font-weight:500;}
+  header .reset{
+    font-size:11px; color:var(--ink-soft); background:none; border:none;
+    text-decoration:underline; cursor:pointer; font-family:inherit;
+  }
+
+  .balance-card{
+    margin:8px 20px 18px;
+    padding:22px 20px;
+    border-radius:18px;
+    background: linear-gradient(160deg, #234F42 0%, #163329 100%);
+    color:#F4EFE3;
+    position:relative;
+    overflow:hidden;
+    box-shadow: 0 10px 24px -10px rgba(22,51,41,0.55);
+  }
+  .balance-card::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.035) 0 2px, transparent 2px 14px);
+    pointer-events:none;
+  }
+  .balance-card .label{
+    font-size:12px; font-weight:500; color:#CFE3DA; letter-spacing:.3px;
+  }
+  .balance-card .amount{
+    font-family:'Roboto Mono', monospace;
+    font-size:38px;
+    font-weight:700;
+    margin-top:6px;
+    direction:ltr;
+    text-align:right;
+    unicode-bidi: plaintext;
+  }
+  .balance-card .amount.negative{ color:#F2C6B8; }
+  .balance-card .row{
+    display:flex; justify-content:space-between;
+    margin-top:16px; padding-top:14px;
+    border-top:1px dashed rgba(244,239,227,0.25);
+    font-size:12px;
+  }
+  .balance-card .row .v{
+    font-family:'Roboto Mono', monospace; font-weight:700; direction:ltr; display:inline-block;
+  }
+  .balance-card .row .k{ color:#CFE3DA; }
+
+  .actions{
+    display:flex; gap:10px;
+    margin:0 20px 18px;
+  }
+  .actions button{
+    flex:1;
+    border:none;
+    border-radius:14px;
+    padding:13px 10px;
+    font-family:inherit;
+    font-weight:700;
+    font-size:14px;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    transition: transform .12s ease;
+  }
+  .actions button:active{ transform: scale(0.97); }
+  .btn-credit{ background:var(--credit-soft); color:var(--credit); border:1.5px solid #C9DED4 !important;}
+  .btn-debit{ background:var(--debit-soft); color:var(--debit); border:1.5px solid #E9CFC2 !important;}
+
+  .filter-tabs{
+    display:flex;
+    gap:6px;
+    margin:0 20px 14px;
+    background:#EFE7D6;
+    border-radius:12px;
+    padding:4px;
+  }
+  .filter-tabs .tab{
+    flex:1;
+    border:none;
+    background:transparent;
+    color:var(--ink-soft);
+    font-family:inherit;
+    font-weight:700;
+    font-size:12.5px;
+    padding:9px 4px;
+    border-radius:9px;
+    cursor:pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .filter-tabs .tab.active{
+    background:var(--card);
+    color:var(--ink);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .filter-tabs .tab[data-filter="credit"].active{ color:var(--credit); }
+  .filter-tabs .tab[data-filter="debit"].active{ color:var(--debit); }
+
+  .list-wrap{
+    flex:1;
+    margin:0 20px 20px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+  .list-header{
+    padding:14px 16px 10px;
+    display:flex; align-items:baseline; justify-content:space-between;
+    border-bottom:1px solid var(--line);
+  }
+  .list-header h2{ font-size:14px; font-weight:900;}
+  .list-header span{ font-size:11px; color:var(--ink-soft);}
+
+  .export-btn{
+    font-size:11px;
+    font-weight:800;
+    color:var(--gold);
+    background:#F6EEDB;
+    border:1.5px solid #E7D6AC;
+    border-radius:8px;
+    padding:5px 9px;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .export-btn:active{ transform: scale(0.96); }
+  .export-btn:disabled{ opacity:.45; cursor:default; }
+
+  .empty{
+    padding:40px 20px;
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:13px;
+    line-height:1.9;
+  }
+
+  ul.tx{ list-style:none; }
+  ul.tx li{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:13px 16px;
+    border-bottom:1px solid var(--line);
+  }
+  ul.tx li:last-child{ border-bottom:none; }
+  .tx-icon{
+    width:36px; height:36px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:900; font-size:15px; flex-shrink:0;
+  }
+  .tx-icon.credit{ background:var(--credit-soft); color:var(--credit); }
+  .tx-icon.debit{ background:var(--debit-soft); color:var(--debit); }
+  .tx-body{ flex:1; min-width:0; }
+  .tx-note{ font-size:13.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tx-date{ font-size:11px; color:var(--ink-soft); margin-top:2px;}
+  .tx-amount{
+    font-family:'Roboto Mono', monospace; font-weight:700; font-size:14.5px;
+    direction:ltr;
+  }
+  .tx-amount.credit{ color:var(--credit); }
+  .tx-amount.debit{ color:var(--debit); }
+  .tx-del{
+    border:none; background:none; color:#C8BFAF; font-size:16px; cursor:pointer;
+    padding:4px 2px; line-height:1; flex-shrink:0;
+  }
+  .tx-del:hover{ color:var(--debit); }
+
+  /* modal */
+  .overlay{
+    position:fixed; inset:0; background:rgba(28,25,19,0.45);
+    display:flex; align-items:flex-end; justify-content:center;
+    opacity:0; pointer-events:none; transition:opacity .18s ease;
+    z-index:20;
+  }
+  .overlay.open{ opacity:1; pointer-events:auto; }
+  .sheet{
+    width:100%; max-width:430px;
+    background:var(--paper);
+    border-radius:22px 22px 0 0;
+    padding:20px 20px 26px;
+    transform: translateY(20px);
+    transition: transform .2s ease;
+  }
+  .overlay.open .sheet{ transform: translateY(0); }
+  .sheet h3{ font-size:16px; font-weight:900; margin-bottom:14px; display:flex; align-items:center; gap:8px;}
+  .sheet h3 .dot{ width:10px;height:10px;border-radius:50%;}
+  .field{ margin-bottom:12px; }
+  .field label{ display:block; font-size:12px; font-weight:700; color:var(--ink-soft); margin-bottom:6px;}
+  .field input{
+    width:100%;
+    border:1.5px solid var(--line);
+    background:var(--card);
+    border-radius:11px;
+    padding:12px 12px;
+    font-family:inherit;
+    font-size:14.5px;
+    color:var(--ink);
+  }
+  .field input:focus{ outline:2px solid var(--gold); outline-offset:1px; border-color:var(--gold);}
+  .field input[type=number]{ font-family:'Roboto Mono', monospace; direction:ltr; text-align:right;}
+  .sheet-actions{ display:flex; gap:10px; margin-top:16px;}
+  .sheet-actions button{
+    flex:1; border:none; border-radius:12px; padding:13px; font-family:inherit;
+    font-weight:800; font-size:14.5px; cursor:pointer;
+  }
+  .btn-cancel{ background:var(--card); color:var(--ink-soft); border:1.5px solid var(--line) !important;}
+  .btn-save{ color:#fff; }
+  .err{ font-size:12px; color:var(--debit); margin-top:-6px; margin-bottom:10px; display:none; }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <header>
+    <div class="brand">
+      <div class="mark">ع</div>
+      <div>
+        <h1>دفتر العهدة</h1>
+        <div class="sub">تابع العهدة والمصروفات أول بأول</div>
+      </div>
+    </div>
+    <button class="reset" id="resetBtn">تصفير الكل</button>
+  </header>
+
+  <div class="balance-card">
+    <div class="label">الرصيد المتبقي من العهدة</div>
+    <div class="amount" id="balanceAmount">0.00</div>
+    <div class="row">
+      <span class="k">إجمالي العهدة <span class="v" id="totalCredit">0.00</span></span>
+      <span class="k">إجمالي المصروفات <span class="v" id="totalDebit">0.00</span></span>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn-credit" id="openCredit">+ إضافة عهدة</button>
+    <button class="btn-debit" id="openDebit">− تسجيل مصروف</button>
+  </div>
+
+  <div class="filter-tabs" id="filterTabs">
+    <button class="tab active" data-filter="all">الكل</button>
+    <button class="tab" data-filter="credit">العهدة</button>
+    <button class="tab" data-filter="debit">المصروفات</button>
+  </div>
+
+  <div class="list-wrap">
+    <div class="list-header">
+      <h2>الحركات</h2>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button id="exportBtn" class="export-btn" title="تصدير إلى إكسيل">⬇ إكسيل</button>
+        <span id="txCount">0 حركة</span>
+      </div>
+    </div>
+    <div id="listArea">
+      <div class="empty">لسه مفيش حركات.<br>ابدأ بإضافة العهدة الأول من الزرار اللي فوق.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- modal -->
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <h3><span class="dot" id="sheetDot"></span><span id="sheetTitle">إضافة عهدة</span></h3>
+    <div class="field">
+      <label>المبلغ</label>
+      <input type="number" id="amountInput" inputmode="decimal" placeholder="0.00" step="0.01" min="0">
+    </div>
+    <div class="err" id="amountErr">اكتب مبلغ أكبر من صفر</div>
+    <div class="field">
+      <label>البيان (اختياري)</label>
+      <input type="text" id="noteInput" placeholder="مثال: بنزين، أدوات مكتبية...">
+    </div>
+    <div class="field">
+      <label>التاريخ</label>
+      <input type="date" id="dateInput">
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-cancel" id="cancelBtn">إلغاء</button>
+      <button class="btn-save" id="saveBtn">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'custody_transactions_v1';
+let transactions = [];
+let currentType = 'credit';
+let activeFilter = 'all';
+
+const fmt = n => n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+async function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    transactions = raw ? JSON.parse(raw) : [];
+  }catch(e){
+    transactions = [];
+  }
+  render();
+}
+
+async function saveData(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+  }catch(e){
+    console.error('storage error', e);
+  }
+}
+
+function render(){
+  const credit = transactions.filter(t=>t.type==='credit').reduce((s,t)=>s+t.amount,0);
+  const debit = transactions.filter(t=>t.type==='debit').reduce((s,t)=>s+t.amount,0);
+  const balance = credit - debit;
+
+  const balEl = document.getElementById('balanceAmount');
+  balEl.textContent = fmt(balance);
+  balEl.classList.toggle('negative', balance < 0);
+  document.getElementById('totalCredit').textContent = fmt(credit);
+  document.getElementById('totalDebit').textContent = fmt(debit);
+  document.getElementById('exportBtn').disabled = transactions.length === 0;
+
+  let filtered = transactions;
+  if(activeFilter === 'credit') filtered = transactions.filter(t=>t.type==='credit');
+  else if(activeFilter === 'debit') filtered = transactions.filter(t=>t.type==='debit');
+
+  document.getElementById('txCount').textContent = filtered.length + ' حركة';
+
+  const listArea = document.getElementById('listArea');
+  if(filtered.length === 0){
+    let msg = 'لسه مفيش حركات.<br>ابدأ بإضافة العهدة الأول من الزرار اللي فوق.';
+    if(activeFilter === 'credit') msg = 'لا توجد عهدة مسجلة بعد.';
+    else if(activeFilter === 'debit') msg = 'لا توجد مصروفات مسجلة بعد.';
+    listArea.innerHTML = `<div class="empty">${msg}</div>`;
+    return;
+  }
+
+  const sorted = [...filtered].sort((a,b)=> new Date(b.date) - new Date(a.date) || b.id - a.id);
+  const ul = document.createElement('ul');
+  ul.className = 'tx';
+  sorted.forEach(t=>{
+    const li = document.createElement('li');
+    const isCredit = t.type === 'credit';
+    li.innerHTML = `
+      <div class="tx-icon ${t.type}">${isCredit ? '+' : '−'}</div>
+      <div class="tx-body">
+        <div class="tx-note">${escapeHtml(t.note || (isCredit ? 'عهدة' : 'مصروف'))}</div>
+        <div class="tx-date">${formatDate(t.date)}</div>
+      </div>
+      <div class="tx-amount ${t.type}">${isCredit ? '+' : '-'}${fmt(t.amount)}</div>
+      <button class="tx-del" data-id="${t.id}" title="حذف">✕</button>
+    `;
+    ul.appendChild(li);
+  });
+  listArea.innerHTML = '';
+  listArea.appendChild(ul);
+
+  listArea.querySelectorAll('.tx-del').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = Number(btn.dataset.id);
+      transactions = transactions.filter(t=>t.id !== id);
+      await saveData();
+      render();
+    });
+  });
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function formatDate(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString('ar-EG', {day:'numeric', month:'long', year:'numeric'});
+}
+
+function openSheet(type){
+  currentType = type;
+  document.getElementById('sheetTitle').textContent = type === 'credit' ? 'إضافة عهدة' : 'تسجيل مصروف';
+  document.getElementById('sheetDot').style.background = type === 'credit' ? 'var(--credit)' : 'var(--debit)';
+  document.getElementById('saveBtn').style.background = type === 'credit' ? 'var(--credit)' : 'var(--debit)';
+  document.getElementById('amountInput').value = '';
+  document.getElementById('noteInput').value = '';
+  document.getElementById('dateInput').value = new Date().toISOString().slice(0,10);
+  document.getElementById('amountErr').style.display = 'none';
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('amountInput').focus(), 150);
+}
+
+function closeSheet(){
+  document.getElementById('overlay').classList.remove('open');
+}
+
+document.querySelectorAll('#filterTabs .tab').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    activeFilter = btn.dataset.filter;
+    document.querySelectorAll('#filterTabs .tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    render();
+  });
+});
+
+document.getElementById('openCredit').addEventListener('click', ()=>openSheet('credit'));
+document.getElementById('openDebit').addEventListener('click', ()=>openSheet('debit'));
+document.getElementById('cancelBtn').addEventListener('click', closeSheet);
+document.getElementById('overlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'overlay') closeSheet();
+});
+
+document.getElementById('saveBtn').addEventListener('click', async ()=>{
+  const amount = parseFloat(document.getElementById('amountInput').value);
+  const note = document.getElementById('noteInput').value.trim();
+  const date = document.getElementById('dateInput').value || new Date().toISOString().slice(0,10);
+
+  if(!amount || amount <= 0){
+    document.getElementById('amountErr').style.display = 'block';
+    return;
+  }
+
+  transactions.push({
+    id: Date.now(),
+    type: currentType,
+    amount: amount,
+    note: note,
+    date: date
+  });
+
+  await saveData();
+  render();
+  closeSheet();
+});
+
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  if(transactions.length === 0) return;
+
+  const sorted = [...transactions].sort((a,b)=> new Date(a.date) - new Date(b.date) || a.id - b.id);
+  const credit = transactions.filter(t=>t.type==='credit').reduce((s,t)=>s+t.amount,0);
+  const debit = transactions.filter(t=>t.type==='debit').reduce((s,t)=>s+t.amount,0);
+  const balance = credit - debit;
+
+  const rows = [
+    ['التاريخ', 'البيان', 'عهدة (دائن)', 'مصروف (مدين)']
+  ];
+  sorted.forEach(t=>{
+    rows.push([
+      t.date,
+      t.note || (t.type === 'credit' ? 'عهدة' : 'مصروف'),
+      t.type === 'credit' ? t.amount : '',
+      t.type === 'debit' ? t.amount : ''
+    ]);
+  });
+  rows.push([]);
+  rows.push(['', 'الإجمالي', credit, debit]);
+  rows.push(['', 'الرصيد المتبقي', '', balance]);
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:14}, {wch:28}, {wch:14}, {wch:14}];
+
+  const wb = XLSX.utils.book_new();
+  wb.Workbook = { Views: [{ RTL: true }] };
+  XLSX.utils.book_append_sheet(wb, ws, 'دفتر العهدة');
+
+  const today = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `دفتر_العهدة_${today}.xlsx`);
+});
+
+document.getElementById('resetBtn').addEventListener('click', async ()=>{
+  if(transactions.length === 0) return;
+  if(confirm('هل أنت متأكد من مسح كل الحركات؟ الإجراء ده مش هيتراجع.')){
+    transactions = [];
+    await saveData();
+    render();
+  }
+});
+
+loadData();
+</script>
+</body>
+</html>
